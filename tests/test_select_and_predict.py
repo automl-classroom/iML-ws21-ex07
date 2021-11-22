@@ -47,13 +47,19 @@ def test_select():
 
 def test_predict():
     ds_val_masked = [
-        {'text': '[MASK] gorgeous, high - spirited musical [MASK] [MASK] [MASK] exquisitely [MASK] [MASK] [MASK] [MASK] [MASK] [MASK] [MASK] [MASK] [MASK] high drama [MASK]',
+        {'text': ['[MASK]', 'gorgeous', 'high', '-', 'spirited', 'musical', '[MASK]', '[MASK]', '[MASK]', 'exquisitely', '[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', 'high', 'drama', '[MASK]'],
         'label': 1},
-        {'text': '[MASK] [MASK] [MASK] [MASK] [MASK] [MASK] me miss [MASK] [MASK] [MASK] [MASK] [MASK] optimistic [MASK] [MASK] [MASK] [MASK] hope [MASK] popular [MASK] [MASK] [MASK]',
+        {'text': ['[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', 'me', 'miss', '[MASK]', '[MASK]', '[MASK]', '[MASK]', '[MASK]', 'optimistic', '[MASK]', '[MASK]', '[MASK]', '[MASK]', 'hope', '[MASK]', 'popular', '[MASK]', '[MASK]', '[MASK]'],
         'label': 1}
     ]
 
     dl = torch.utils.data.DataLoader(ds_val_masked, batch_size=1, collate_fn=_custom_collate)
+    predictions = module.predict(predictor_model, dl)
+    assert isinstance(predictions, list)
+    assert len(predictions) == 2
+    assert predictions == [1, 1]
+
+    dl = torch.utils.data.DataLoader(ds_val_masked, batch_size=2, collate_fn=_custom_collate)
     predictions = module.predict(predictor_model, dl)
     assert isinstance(predictions, list)
     assert len(predictions) == 2

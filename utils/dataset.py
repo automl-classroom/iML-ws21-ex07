@@ -56,7 +56,7 @@ def tokenize(texts, rationales=None):
 	"""
 	Adapted from https://colab.research.google.com/github/huggingface/notebooks/blob/master/examples/token_classification.ipynb
 	"""
-	tokenized_inputs = tokenizer(texts, truncation=True, padding=True, is_split_into_words=True, return_tensors='pt')
+	tokenized_inputs = tokenizer(text=texts, truncation=True, padding=True, is_split_into_words=True, return_tensors='pt')
 
 	if rationales is not None:
 		labels = []
