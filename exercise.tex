@@ -1,0 +1,132 @@
+\documentclass[a4paper]{article}
+\usepackage[a4paper,
+            bindingoffset=0.2in,
+            left=0.8in,
+            right=0.8in,
+            top=0.8in,
+            bottom=1.6in,
+            footskip=.8in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[]{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\hypersetup{colorlinks = true}
+
+\usepackage{xcolor}
+
+\begin{document}
+
+{\noindent\LARGE Exercise 7\par}
+\vspace{8pt}
+{\noindent\huge\textbf{Ante-hoc Methods}}
+\vspace{20pt}
+
+\par\noindent\rule{\textwidth}{0.2pt}
+\begin{itemize}
+    \item You can get a bonus point for this exercise if you pass at least 2/3 of the tests. Code is automatically tested after pushing. If your tests fail, either your code is wrong, or you solved the task differently. In the second case, we will manually check your solution.
+    \item Three collected bonus points result in a 0.33 increase of the final grade.
+    \item You are allowed to work in groups with up to three people. You do not need to specify your ErgebnisPIN as it is already collected from the entrance test.
+    \item Follow the `README.md` for further instructions.
+    \item Finish this exercise by \color{red}{1st December, 2021 at 11:59 pm.}
+\end{itemize}
+\par\noindent\rule{\textwidth}{0.2pt}
+\vspace{10pt}
+
+\noindent
+Note: This assignment requires installing new packages.
+You can install them by running \textit{pip install -r requirements.txt} in your environment.
+
+\noindent
+\subsection*{Instance-wise Feature Selection with Select and Predict Models}
+Select and predict style models are composed of a selector, that predicts a binary mask over the input features of each instance, and a predictor, that consumes the masked input to make a final prediction.
+Unfortunately, binary masking is a non-differentiable operation.
+This makes it hard to train such models end-to-end.
+A workaround is the so-called \textit{pipeline} setup, where selector and predictor are trained independently.
+In addition to a label for each instance to train the predictor, this requires groundtruth explanations
+
+In this exercise, the goal is to train and run such a pipeline model on a movie review sentiment classification dataset.
+The dataset also includes rationale annotations, i.e. highlights that represent important tokens in form of a binary mask.
+We want to use these as groundtruth explanations to train the selector model.
+Here are two examples:
+\begin{align*}
+&\text{text: A gorgeous musical I watched at the palace cinema}\\
+&\text{label: 1 (positive)}\\
+&\text{rationale: }[0, 1, 0, 0, 0, 0, 0, 0, 0]\\
+\\
+&\text{text: What a bad drama .}\\
+&\text{label: 0 (negative)}\\
+&\text{rationale: }[0, 0, 1, 0, 0]
+\end{align*}
+Note that the 1's in the rationales highlight the tokens that are important for sentiment classification.
+
+\subsection*{Selector Model}
+The goal of the selector model is to predict these rationale masks.
+In our case, the selector is a token classifier, that predicts either 0 or 1 for each token in the sequence.
+For this exercise, we choose \href{https://arxiv.org/abs/1910.01108}{DistilBERT} for both the selector and the predictor model.
+Running the selector consists of the following steps:
+\begin{enumerate}
+
+    \item First, the input text has to be tokenized, that means, the input text tokens are mapped to a sequence of integer input ids.
+    For BERT-style models, a few special tokens are added:
+    Each sequence starts with a [CLS] token and ends with a [SEP] token.
+    Since all sequences in one batch must be of the same length, a [PAD] token is used to pad shorter sequences to the same length as the longest one in the batch.
+    For a batch containing our two examples, the tokenized input could look like this:
+    \begin{align*}
+    &\text{text: [CLS] A gorgeous musical I watched at the palace cinema [SEP]}\\
+    &\text{input ids: }[101, 2, 876, 1098, 5, 66, 78, 134, 867, 555, 102]\\
+    &\text{attention\_mask: }[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]\\
+    &\text{rationale: }[-100, 0, 1, 0, 0, 0, 0, 0, 0, 0, -100]\\
+    \\
+    &\text{text: [CLS] What a bad drama . [SEP] [PAD] [PAD] [PAD] [PAD]}\\
+    &\text{input ids: }[101, 44, 2, 11, 43, 3, 102, 0, 0, 0, 0]\\
+    &\text{attention\_mask: }[1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]\\
+    &\text{rationale: }[-100, 0, 0, 1, 0, 0, -100, -100, -100, -100, -100]
+    \end{align*}
+    The special tokens [CLS], [SEP], [PAD] are represented by the special input ids 101, 102 and 0, respectively.
+    Also, the rationale is aligned to the tokenized input ids and is filled with -100 to indicate that the label and the token at that index should be ignored when computing the loss or performance metrics.
+
+    \item The model takes as input the input\_ids and attention\_masks.
+    The output obtained by running a forward pass are logits of shape (batch size, 2, sequence length).
+    These are the unnormalized probabilities for each of the two classes for each token in the input.
+    
+    \item After obtaining the predictions, the input tokens for which the predicted label is 0, can be masked by replacing the corresponding token ids with the token id of the [MASK] token.
+    
+    \item Finally, the input ids can be converted back to string text using a decode function, that inverts the tokenization process.
+    Any [CLS], [SEP], [PAD] tokens can be dropped.
+    An example result could be:
+    \begin{align*}
+    &\text{masked text: [MASK] gorgeous [MASK] [MASK] [MASK] [MASK] [MASK] [MASK] [MASK]}
+    \end{align*}
+    
+\end{enumerate}
+
+ 
+ 
+\subsection*{Predictor Model}
+ The predictor model is a sequence classification model, as its goal is to predict a single label for every input sequence.
+ Given a movie review text that was masked by the selector model, it predicts either 1 (positive) or 0 (negative).
+ The inputs must be tokenized in the same way as for the selector.
+ The model output is now of shape (batch size, 2).
+ Again, these are the logits for each class.
+ 
+
+
+
+
+\section{Select and Predict}
+
+\subsection{Training the Selector Model}
+In this exercise, we build on pretrained models in this exercise.
+Yet, the selector needs some finetuning to the new task of extracting explanation masks.
+Complete the \textit{train\_selector\_model} function that trains the token classification head of the DistilBERT model \textbf{for one epoch}.
+This includes implementing the sub-function \textit{train\_one\_epoch} as well as \textit{validate}, that evaluates the model on the validation set after training it.
+Use cross entropy loss and make sure to not include the tokens for which the rationale label is -100.
+For more details, refer to the in code documentation.
+
+\subsection{Implementing the Pipeline Model}
+Complete the functions \textit{select} and \textit{predict}, that implement the two steps of the select-and-predict pipeline.
+
+\noindent Associated file: \textit{select\_and\_predict.py}.
+
+
+\end{document}
