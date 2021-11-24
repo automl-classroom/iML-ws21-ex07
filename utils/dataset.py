@@ -29,7 +29,11 @@ class SentimentRationaleDataset(torch.utils.data.Dataset):
 		self.df['text'] = self.df['text'].apply(lambda s: s.split())
 
 	def _load_split(self, split):
-		return pd.read_csv(DATASET_DIR / f'{split}.tsv', sep='\t', converters={'rationale': ast.literal_eval})
+		try:
+			df = pd.read_csv(DATASET_DIR / f'{split}.tsv', sep='\t', converters={'rationale': ast.literal_eval})
+		except FileNotFoundError as e:
+			raise FileNotFoundError('Did you run `python utils/dataset.py` to download and preprocess the dataset?') from e
+		return df
 
 	def __len__(self):
 		return self.df.shape[0]
