@@ -7,13 +7,13 @@ torch.manual_seed(0)
 
 from classifiers.distilbert import Selector, Predictor
 from tests.config import WORKING_DIR
-from utils.dataset import SentimentRationaleDataset, _custom_collate
+from utils.dataset import SentimentRationaleDataset, _custom_collate, download_and_preprocess_dataset
 
 
 module = __import__(f"{WORKING_DIR}.select_and_predict", fromlist=[
     'train_selector_model', 'select', 'predict'])
 
-
+download_and_preprocess_dataset()
 ds_train = SentimentRationaleDataset('train', limit=100)
 ds_val = SentimentRationaleDataset('dev', limit=100)
 
